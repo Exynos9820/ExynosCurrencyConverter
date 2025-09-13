@@ -36,7 +36,7 @@ class CurrenciesHandler:
             "rates": rates
         }
         with open(self.cache_file, "w") as f:
-            json.dump(data, f)
+            json.dump(data, f, indent=4, sort_keys=True)
         self.last_fetched_time = datetime.utcnow()
         self.cached_rates = rates
 

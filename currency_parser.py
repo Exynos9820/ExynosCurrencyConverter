@@ -40,13 +40,17 @@ class CurrencyParser:
         pattern = r"(\d{1,3}(?:,\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)\s*((?:k|к|thousand|тыс|тысяч|mil|млн|million|миллион|лям|ляма|лимон|лимона|m|м)(?:illion|llion|л(?:ио)?н(?:ов)?)?)[.\s]*([a-zA-Zа-яА-Я€$¥£₽₴кчКЧ]+)"
 
         for match in re.finditer(pattern, text, re.IGNORECASE):
-            amount_str = match.group(1).replace(',', '')
-            multiplier_text = match.group(2)
-            currency = match.group(3).lower()
+            try:
+                amount_str = match.group(1).replace(',', '')
+                amount = float(amount_str)
+                multiplier_text = match.group(2)
+                currency = match.group(3).lower()
 
-            base_multiplier = multiplier_text.lower().split('illion')[0].split('llion')[0].split('лион')[0].split('лн')[0].rstrip('а').rstrip('ов')
-            if base_multiplier in self.multipliers:
-                amount *= self.multipliers[base_multiplier]
+                base_multiplier = multiplier_text.lower().split('illion')[0].split('llion')[0].split('лион')[0].split('лн')[0].rstrip('а').rstrip('ов')
+                if base_multiplier in self.multipliers:
+                    amount *= self.multipliers[base_multiplier]
+            except (ValueError, KeyError):
+                continue
 
             self._add_if_valid_currency(results, amount, currency)
 
