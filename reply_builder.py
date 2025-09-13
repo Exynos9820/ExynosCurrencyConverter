@@ -17,8 +17,7 @@ class ReplyBuilder:
             if currency.upper() == base.upper():
                 continue
             try:
-                converted = float(rate) * amount
-                formatted_converted = f"{converted:,.2f}".rstrip('0').rstrip('.')
+                formatted_converted = f"{float(rate):,.2f}".rstrip('0').rstrip('.')
             except Exception:
                 continue
             emoji = html.escape(self._emoji_for(currency))
