@@ -3,6 +3,7 @@ from telegram.ext import ContextTypes
 from currencies_handler import CurrenciesHandler
 from reply_builder import ReplyBuilder
 from currency_parser import CurrencyParser
+from rate_limiter import RateLimiter
 
 class CurrencyMessageHandler:
     def __init__(self, currencies_handler: CurrenciesHandler, reply_builder: ReplyBuilder,
@@ -12,10 +13,11 @@ class CurrencyMessageHandler:
         self.reply_builder = reply_builder
         self.allowed_user_ids = allowed_user_ids
         self.allowed_chat_ids = allowed_chat_ids
+        self.rate_limiter = RateLimiter(limit=5, window=60)  # 5 requests per minute
+        self.max_values_per_message = 5  # Maximum number of currency values per message
 
     async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle incoming messages with currency amounts"""
-
         # if chat is allowed, then we reply even if user is not in allowed users
         if self.allowed_chat_ids:
             chat_id_str = str(update.effective_chat.id)
@@ -28,6 +30,20 @@ class CurrencyMessageHandler:
         if not currency_pairs:
             print("No amount or base currency detected")
             return
+
+        # Only check rate limit if we found currency pairs
+        user_id = update.effective_user.id
+        if not self.rate_limiter.is_allowed(user_id):
+            remaining_time = self.rate_limiter.get_remaining_time(user_id)
+            await update.message.reply_text(
+                f"⏳ Please wait {remaining_time} seconds before making another request.",
+                parse_mode="HTML"
+            )
+            return
+
+        # If there are more than max values, take only the first max_values
+        if len(currency_pairs) > self.max_values_per_message:
+            currency_pairs = currency_pairs[:self.max_values_per_message]
 
         all_replies = []
         for amount, base in currency_pairs:
