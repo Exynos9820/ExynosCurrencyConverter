@@ -8,7 +8,8 @@ class ReplyBuilder:
         return CURRENCY_EMOJIS.get(iso.upper(), iso.upper())
 
     def build_html(self, amount: float, base: str, rates: dict) -> str:
-        safe_amount = html.escape(f"{amount:g}")
+        formatted_amount = f"{amount:,.2f}".rstrip('0').rstrip('.')
+        safe_amount = html.escape(formatted_amount)
         header = f"<b>{safe_amount} {html.escape(base)}</b>:\n"
 
         lines = []
@@ -16,11 +17,12 @@ class ReplyBuilder:
             if currency.upper() == base.upper():
                 continue
             try:
-                converted = float(rate)
+                converted = float(rate) * amount
+                formatted_converted = f"{converted:,.2f}".rstrip('0').rstrip('.')
             except Exception:
                 continue
             emoji = html.escape(self._emoji_for(currency))
-            lines.append(f"{emoji} <b>{converted:,.2f}</b> <code>{html.escape(currency)}</code>")
+            lines.append(f"{emoji} <b>{formatted_converted}</b> <code>{html.escape(currency)}</code>")
 
         body = "\n".join(lines) if lines else "<i>No supported target currencies returned.</i>"
         return header + body
