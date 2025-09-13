@@ -5,13 +5,24 @@ from reply_builder import ReplyBuilder
 from currency_parser import CurrencyParser
 
 class CurrencyMessageHandler:
-    def __init__(self, currencies_handler: CurrenciesHandler, reply_builder: ReplyBuilder):
+    def __init__(self, currencies_handler: CurrenciesHandler, reply_builder: ReplyBuilder,
+                 allowed_user_ids: str, allowed_chat_ids: str):
         self.currency_parser = CurrencyParser()
         self.currencies_handler = currencies_handler
         self.reply_builder = reply_builder
+        self.allowed_user_ids = allowed_user_ids
+        self.allowed_chat_ids = allowed_chat_ids
 
     async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle incoming messages with currency amounts"""
+
+        # if chat is allowed, then we reply even if user is not in allowed users
+        if self.allowed_chat_ids:
+            chat_id_str = str(update.effective_chat.id)
+            if chat_id_str not in self.allowed_chat_ids.split(","):
+                print(f"Chat {chat_id_str} not in allowed chats, ignoring.")
+                return
+
         text = update.message.text
         currency_pairs = self.currency_parser.parse(text)
         if not currency_pairs:
