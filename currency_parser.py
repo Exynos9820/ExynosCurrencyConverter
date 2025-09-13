@@ -37,10 +37,10 @@ class CurrencyParser:
     def _try_parse_number_multiplier_currency(self, text: str) -> List[Tuple[float, str]]:
         """Try to parse text as number + multiplier + currency (e.g., '100k usd', '1.5m eur')"""
         results = []
-        pattern = r"(\d+(?:\.\d+)?)\s*((?:k|к|thousand|тыс|тысяч|mil|млн|million|миллион|лям|ляма|лимон|лимона|m|м)(?:illion|llion|л(?:ио)?н(?:ов)?)?)[.\s]*([a-zA-Zа-яА-Я€$¥£₽₴кчКЧ]+)"
+        pattern = r"(\d{1,3}(?:,\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)\s*((?:k|к|thousand|тыс|тысяч|mil|млн|million|миллион|лям|ляма|лимон|лимона|m|м)(?:illion|llion|л(?:ио)?н(?:ов)?)?)[.\s]*([a-zA-Zа-яА-Я€$¥£₽₴кчКЧ]+)"
 
         for match in re.finditer(pattern, text, re.IGNORECASE):
-            amount = float(match.group(1))
+            amount_str = match.group(1).replace(',', '')
             multiplier_text = match.group(2)
             currency = match.group(3).lower()
 
@@ -112,10 +112,11 @@ class CurrencyParser:
     def _try_parse_number_currency(self, text: str) -> List[Tuple[float, str]]:
         """Try to parse text as number + currency (e.g., '100 usd', '50 eur')"""
         results = []
-        pattern = r"(\d+(?:\.\d+)?)[.\s]*([a-zA-Zа-яА-Я€$¥£₽₴кчКЧ]+)"
+        pattern = r"(\d{1,3}(?:,\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)[.\s]*([a-zA-Zа-яА-Я€$¥£₽₴кчКЧ]+)"
 
         for match in re.finditer(pattern, text, re.IGNORECASE):
-            amount = float(match.group(1))
+            amount_str = match.group(1).replace(',', '')
+            amount = float(amount_str)
             currency = match.group(2).lower()
             self._add_if_valid_currency(results, amount, currency)
 
