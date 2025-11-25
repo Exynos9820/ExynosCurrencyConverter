@@ -86,7 +86,7 @@ class CurrencyParser:
         """Try to parse text as multiplier word + currency (e.g., 'миллион рублей', 'тысяча долларов')"""
         results = []
         sorted_multipliers = sorted(self.multipliers.keys(), key=len, reverse=True)
-        pattern = r"(?i)(" + "|".join(map(re.escape, sorted_multipliers)) + r")\s+([a-zA-Zа-яА-Я€$¥£₽₴кчКЧ]+)"
+        pattern = r"(?i)\b(" + "|".join(map(re.escape, sorted_multipliers)) + r")\s+([a-zA-Zа-яА-Я€$¥£₽₴кчКЧ]+)\b"
 
         for match in re.finditer(pattern, text, re.IGNORECASE):
             multiplier_word = match.group(1).lower()
@@ -100,7 +100,7 @@ class CurrencyParser:
         """Try to parse text as word number + currency (e.g., 'two hundred dollars', 'двести рублей')"""
         results = []
         sorted_numbers = sorted(WORD_NUMBERS.keys(), key=len, reverse=True)
-        pattern = r"(?i)(" + "|".join(map(re.escape, sorted_numbers)) + r")\s+([a-zA-Zа-яА-Я€$¥£₽₴кчКЧ]+)"
+        pattern = r"(?i)\b(" + "|".join(map(re.escape, sorted_numbers)) + r")\s+([a-zA-Zа-яА-Я€$¥£₽₴кчКЧ]+)\b"
 
         for match in re.finditer(pattern, text, re.IGNORECASE):
             try:
@@ -129,6 +129,6 @@ class CurrencyParser:
     def _add_if_valid_currency(self, results: List[Tuple[float, str]], amount: float, currency: str):
         """Helper method to add amount and currency if the currency is valid"""
         for alias, code in CURRENCY_ALIASES.items():
-            if currency.startswith(alias) or currency == alias:
+            if currency == alias or currency.startswith(alias):
                 results.append((amount, code))
                 break

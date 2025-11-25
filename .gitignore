@@ -2,3 +2,4 @@
 /.venv
 /__pycache__
 /rates_cache.json
+/tests/__pycache__/
