@@ -6,7 +6,7 @@ from word_numbers import WORD_NUMBERS
 class CurrencyParser:
     def __init__(self):
         self.multipliers = {
-            'k': 1000, 'к': 1000, 'thousand': 1000, 'тыс': 1000, 'тысяч': 1000,
+            'k': 1000, 'thousand': 1000, 'тыс': 1000, 'тысяч': 1000, 'тысяча': 1000, 'тысячи': 1000,
             'm': 1000000, 'м': 1000000, 'mil': 1000000, 'млн': 1000000,
             'million': 1000000, 'миллион': 1000000, 'лям': 1000000, 'лимон': 1000000,
             'ляма': 1000000, 'лимона': 1000000, 'миллиона': 1000000, 'миллионов': 1000000
@@ -37,18 +37,20 @@ class CurrencyParser:
     def _try_parse_number_multiplier_currency(self, text: str) -> List[Tuple[float, str]]:
         """Try to parse text as number + multiplier + currency (e.g., '100k usd', '1.5m eur')"""
         results = []
-        pattern = r"(\d{1,3}(?:,\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)\s*((?:k|к|thousand|тыс|тысяч|mil|млн|million|миллион|лям|ляма|лимон|лимона|m|м)(?:illion|llion|л(?:ио)?н(?:ов)?)?)[.\s]*([a-zA-Zа-яА-Я€$¥£₽₴кчКЧ]+)"
+        # Build pattern dynamically from all multipliers
+        sorted_multipliers = sorted(self.multipliers.keys(), key=len, reverse=True)
+        multiplier_pattern = "|".join(map(re.escape, sorted_multipliers))
+        pattern = r"(\d{1,3}(?:,\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)\s*(" + multiplier_pattern + r")[.\s]*([a-zA-Zа-яА-Я€$¥£₽₴кчКЧ]+)"
 
         for match in re.finditer(pattern, text, re.IGNORECASE):
             try:
                 amount_str = match.group(1).replace(',', '')
                 amount = float(amount_str)
-                multiplier_text = match.group(2)
+                multiplier_text = match.group(2).lower()
                 currency = match.group(3).lower()
 
-                base_multiplier = multiplier_text.lower().split('illion')[0].split('llion')[0].split('лион')[0].split('лн')[0].rstrip('а').rstrip('ов')
-                if base_multiplier in self.multipliers:
-                    amount *= self.multipliers[base_multiplier]
+                if multiplier_text in self.multipliers:
+                    amount *= self.multipliers[multiplier_text]
             except (ValueError, KeyError):
                 continue
 
@@ -129,6 +131,6 @@ class CurrencyParser:
     def _add_if_valid_currency(self, results: List[Tuple[float, str]], amount: float, currency: str):
         """Helper method to add amount and currency if the currency is valid"""
         for alias, code in CURRENCY_ALIASES.items():
-            if currency == alias or currency.startswith(alias):
+            if currency == alias:
                 results.append((amount, code))
                 break

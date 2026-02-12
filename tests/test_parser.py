@@ -85,3 +85,13 @@ class TestEdgeCases:
     def test_empty_string(self, parser):
         result = parser.parse("")
         assert result == []
+
+    def test_false_positive_k_preposition(self, parser):
+        # "к европейскому" should not be parsed (к is a preposition, европейскому is not a currency)
+        result = parser.parse("к европейскому")
+        assert result == []
+
+    def test_tysiachi_kron(self, parser):
+        # "92 тысячи крон" should be parsed as 92000 CZK
+        result = parser.parse("92 тысячи крон")
+        assert result == [(92000.0, 'CZK')]
