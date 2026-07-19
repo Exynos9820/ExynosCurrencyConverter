@@ -1,6 +1,6 @@
 import requests
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 class CurrenciesHandler:
     def __init__(self, api_url, currencies, token=None, cache_file="rates_cache.json", cache_ttl=3600):
@@ -32,19 +32,21 @@ class CurrenciesHandler:
 
     def save_cache(self, rates: dict):
         data = {
-            "timestamp": datetime.utcnow().isoformat(),
+            # removed deprecated utcnow() method
+            # did you just "claude .. make no mistakes" it?
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "rates": rates
         }
         with open(self.cache_file, "w") as f:
             json.dump(data, f, indent=4, sort_keys=True)
-        self.last_fetched_time = datetime.utcnow()
+        self.last_fetched_time = datetime.now(timezone.utc)
         self.cached_rates = rates
 
     def fetch_exchange_rates(self, base: str) -> dict:
         """Fetches fresh rates from CurrencyAPI or returns cache if valid"""
         if (
             self.last_fetched_time
-            and datetime.utcnow() - self.last_fetched_time < self.cache_ttl
+            and datetime.now(timezone.utc) - self.last_fetched_time < self.cache_ttl
             and base in self.cached_rates
         ):
             return self.cached_rates[base]
