@@ -61,21 +61,91 @@ class CurrencyMessageHandler:
         # Join all replies with double newlines for better readability
         final_reply = "\n\n".join(all_replies)
 
-        # Create inline keyboard with delete button
-        keyboard = [[InlineKeyboardButton("🗑 Delete", callback_data="delete")]]
+        lines = [line for line in final_reply.split("\n") if line.strip()]
+        header_reply = lines[0]
+
+        # Create inline keyboard with show and delete buttons
+        keyboard = [
+            [
+                InlineKeyboardButton("Show", callback_data="show"),
+                InlineKeyboardButton("🗑 Delete", callback_data="delete")
+                ]
+            ]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        await update.message.reply_text(
-            final_reply,
+        msg = await update.message.reply_text(
+            header_reply,
             parse_mode="HTML",
             disable_web_page_preview=True,
             reply_markup=reply_markup
         )
 
+        # store the state and both text versions in the user_data cache
+        context.bot_data.setdefault("currency_cache", {})
+            
+        cache_key = (update.effective_chat.id, msg.message_id)
+        context.bot_data["currency_cache"][cache_key] = {
+            "full": final_reply,
+            "min": header_reply,
+            # track whether the message is currently open or closed
+            "expanded": False
+        }
+
     async def handle_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle button callbacks"""
         query = update.callback_query
-        await query.answer()  # Answer the callback query to stop the loading state
-
+        # get the cached strings for this specific message
+        chat_id = query.message.chat_id
+        message_id = query.message.message_id
+        cache_key = (chat_id, message_id)
+        cache = context.bot_data.get("currency_cache", {}).get(cache_key)
+        
         if query.data == "delete":
+            await query.answer()
+            # clean up the cache to prevent memory leak
+            # we are not telegram devs and can't afford that
+            if "currency_cache" in context.user_data:
+                context.user_data["currency_cache"].pop(message_id, None)
             await query.message.delete()
+            return # stop the execution
+
+        elif query.data == "show":
+            await query.answer()  # removes the loading spinner animation on the button
+            
+            # fallback if the bot process restarted and wiped the volatile RAM cache
+            if not cache:
+                await query.message.edit_text(
+                    "Data expired or bot was restarted",
+                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🗑 Delete", callback_data="delete")]])
+                )
+                return
+
+            # invert the current boolean toggle state
+            cache["expanded"] = not cache["expanded"]
+            
+            # choose text format and button indicator text based on the active state
+            if cache["expanded"]:
+                text_to_show = cache["full"]
+                button_label = "Hide"
+            else:
+                text_to_show = cache["min"]
+                button_label = "Show"
+
+            # rebuild the interface with the new dynamic toggle label
+            keyboard = [
+                [
+                    InlineKeyboardButton(button_label, callback_data="show"),
+                    InlineKeyboardButton("🗑 Delete", callback_data="delete")
+                ]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+
+            # apply modifications
+            await query.message.edit_text(
+                text_to_show,
+                parse_mode="HTML",
+                disable_web_page_preview=True,
+                reply_markup=reply_markup
+            )
+        else:
+            await query.answer()
