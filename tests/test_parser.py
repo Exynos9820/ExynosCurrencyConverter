@@ -32,6 +32,12 @@ class TestNumberMultiplierCurrency:
     def test_number_with_k_multiplier(self, parser):
         result = parser.parse("100k usd")
         assert result == [(100000.0, 'USD')]
+        result = parser.parse("100к гривен")
+        assert result == [(100000.0, 'UAH')]
+        result = parser.parse("100k рублей")
+        assert result == [(100000.0, 'RUB')]
+        result = parser.parse("15k крон")
+        assert result == [(15000.0, 'CZK')]
 
     def test_number_with_million_multiplier(self, parser):
         result = parser.parse("1.5m eur")

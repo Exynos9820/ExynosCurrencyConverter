@@ -46,7 +46,7 @@ class CurrenciesHandler:
         """Fetches fresh rates from CurrencyAPI or returns cache if valid"""
         if (
             self.last_fetched_time
-            and datetime.now(timezone.utc) - self.last_fetched_time < self.cache_ttl
+            and datetime.now(timezone.utc) - self.last_fetched_time.astimezone(timezone.utc) < self.cache_ttl
             and base in self.cached_rates
         ):
             return self.cached_rates[base]
