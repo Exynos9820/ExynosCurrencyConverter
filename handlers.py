@@ -105,7 +105,7 @@ class CurrencyMessageHandler:
             # clean up the cache to prevent memory leak
             # we are not telegram devs and can't afford that
             if "currency_cache" in context.user_data:
-                context.user_data["currency_cache"].pop(message_id, None)
+                context.user_data["currency_cache"].pop(cache_key, None)
             await query.message.delete()
             return # stop the execution
 
