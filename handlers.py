@@ -62,7 +62,7 @@ class CurrencyMessageHandler:
         final_reply = "\n\n".join(all_replies)
 
         lines = [line for line in final_reply.split("\n") if line.strip()]
-        header_reply = lines[0]
+        header_reply = [l for l in lines if "USD" in l][0]
 
         # Create inline keyboard with show and delete buttons
         keyboard = [
